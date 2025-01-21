@@ -1,26 +1,68 @@
 import java.util.Scanner;
+import java.util.List;
+import java.util.Random;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.IOException;
+
+import java.time.Instant;
+import java.time.Duration;
 
 public class HungoverCockroach {
+    private static final Random random = new Random();
 
     public static void main(String[] args) {
+        Scanner s = new Scanner(System.in);
 
         String[][] tileSet = buildTileset();
+        placeCockroach(tileSet);
 
-        System.out.println("test");
-
-        printTileset(tileSet);
-
-        System.out.println("Rows: " + tileSet.length);
-
-        System.out.println("Columns: " + tileSet[0].length);
-
-        tileSet = placeCockroach(tileSet);
+        int[] aLoc = findItemLoc(tileSet, "A ");
+        int[] wLoc = findItemLoc(tileSet, "W ");
+        int[] cStart = findItemLoc(tileSet, "C ");
 
         printTileset(tileSet);
 
-        System.out.println(" ");
+        int numSim = -1;
+        boolean validInput = false;
+        
+        while (!validInput) {
+            try {
+                System.out.println("Enter number of simulations you would like to run: ");
+                String input = s.nextLine();
+                numSim = Integer.parseInt(input);
+                
+                if (numSim < 1) {
+                    throw new IllegalArgumentException("Please enter a number greater than 0 for simulations.");
+                }
+                
+                validInput = true;
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid integer for the number of simulations.");
+            } catch (IllegalArgumentException e) {
+                System.out.println(e.getMessage());
+            }
+        }
 
-        moveCockroach(tileSet);
+        List<SimulationResult> results = runSimulations(tileSet, aLoc, wLoc, cStart, numSim);
+        
+        for (int i = 0; i<results.size(); i++) {
+            SimulationResult result = results.get(i);
+
+            System.out.println("Simulation: " + (i + 1));
+            System.out.println("Moves: " + result.moves.size());
+            System.out.println("Path: " + result.moves);
+            System.out.println("Found Aspirin: " + result.foundAspirin);
+            System.out.println("Found Water: " + result.foundWater);
+            System.out.println(" ");
+
+        }
+
+        s.close();
     }
 
     public static String[][] buildTileset(){
@@ -139,8 +181,6 @@ public class HungoverCockroach {
         tileSet[aRow][aColumn] = "A ";
 
         printTileset(tileSet);
-
-        scanner.close();
         
         return tileSet;
     }
@@ -161,6 +201,7 @@ public class HungoverCockroach {
             }
             System.out.println();
         }
+        System.out.println(" ");
     }
 
     public static String[][] placeCockroach(String[][] tileSet){
@@ -216,6 +257,114 @@ public class HungoverCockroach {
                     System.out.println("Cockroach found at: " + i + " " + j);
                 }
             }
+        }
+    }
+
+    public static int[] findItemLoc(String[][] tileSet, String item){
+        for (int i = 0; i < tileSet.length; i++){
+            for (int j = 0; j < tileSet[0].length; j++){
+                if (tileSet[i][j].equals(item)){
+                    return new int[]{i, j};
+                }
+            }
+        }
+        return null;
+    }
+
+    public static List<SimulationResult> runSimulations(String[][] tileSet, int[] aLoc, int[] wLoc, int[] cStart, int numSim){
+        List<SimulationResult> results = new ArrayList<>();
+
+        for (int i = 0; i < numSim; i++){
+            SimulationResult result = runSim(tileSet, aLoc, wLoc, cStart);
+            results.add(result);
+        }
+
+        return results;
+    }
+
+    public static SimulationResult runSim(String[][] tileSet, int[] aLoc, int[] wLoc, int[] cStart) {
+        boolean[][] visit = new boolean[tileSet.length][tileSet[0].length];
+        int[] cPos = Arrays.copyOf(cStart, 2);
+        List<String> moves = new ArrayList<>();
+        boolean gotAsprin = false;
+        boolean gotWater = false;
+
+        while ((!gotAsprin && !gotWater) && !allTilesVisited(visit)){
+            visit[cPos[0]][cPos[1]] = true;
+
+            if (Arrays.equals(cPos, aLoc)) {
+                gotAsprin = true;
+            } else if (Arrays.equals(cPos, wLoc)) {
+                gotWater = true;
+            }
+
+            int[] nextPos = getNextPos(cPos, tileSet.length, tileSet[0].length);
+            String dir = getDir(cPos, nextPos);
+
+            moves.add(dir);
+            cPos = nextPos;
+
+        }
+        return new SimulationResult(moves, gotAsprin, gotWater);
+    }
+
+    public static int[] getNextPos(int[] cPos, int rows, int col){
+        int[][] dirs = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
+        int[] nextPos;
+
+        do{
+            int[] dir = dirs[random.nextInt(dirs.length)];
+            nextPos = new int[]{cPos[0] + dir[0], cPos[1] + dir[1]};
+        } while (nextPos[0] < 0 || nextPos[0] >= rows || nextPos[1] < 0 || nextPos[1] >= col);
+
+        return nextPos;
+    }
+
+    public static String getDir(int[] from, int[] to){
+        int rowDiff = to[0] - from[0];
+        int colDiff = to[1] - from[1];
+
+        if (rowDiff == -1 && colDiff == -1){
+            return "NW";
+        } else if (rowDiff == -1 && colDiff == 0){
+            return "N";
+        } else if (rowDiff == -1 && colDiff == 1){
+            return "NE";
+        } else if (rowDiff == 0 && colDiff == -1){
+            return "W";
+        } else if (rowDiff == 0 && colDiff == 1){
+            return "E";
+        } else if (rowDiff == 1 && colDiff == -1){
+            return "SW";
+        } else if (rowDiff == 1 && colDiff == 0){
+            return "S";
+        } else if (rowDiff == 1 && colDiff == 1){
+            return "SE";
+        } else {
+            return "";
+        }
+    }
+
+    public static boolean allTilesVisited(boolean[][] visit){
+        for (int i = 0; i < visit.length; i++){
+            for (int j = 0; j < visit[0].length; j++){
+                if (!visit[i][j]){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static class SimulationResult {
+        List<String> moves;
+        boolean foundAspirin;
+        boolean foundWater;
+        
+        SimulationResult(List<String> moves, boolean foundAspirin, boolean foundWater) {
+            this.moves = moves;
+            this.foundAspirin = foundAspirin;
+            this.foundWater = foundWater;
         }
     }
 
