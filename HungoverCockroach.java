@@ -1,7 +1,6 @@
 import java.util.Scanner;
 import java.util.List;
 import java.util.Random;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -238,13 +237,6 @@ public class HungoverCockroach {
          * 
          */
 
-         /*
-          * 
-          * Still needs: Logic for if the water or the asprin is placed in the spot that the cockroach goes in
-          * Should be basic if statement built into the loop
-          * 
-          */
-
         Double halfRow = Math.floor(tileSet.length / 2);
         Double halfCol = Math.floor(tileSet[0].length / 2);
 
@@ -257,6 +249,14 @@ public class HungoverCockroach {
     }
 
     public static int[] findItemLoc(String[][] tileSet, String item){
+        /*
+         * 
+         * Function for finding the location of an item in the tileset
+         * Takes in: tileSet in 2D Array format with strings, item to find
+         * Returns: integer array with location of said item
+         * 
+         */
+
         for (int i = 0; i < tileSet.length; i++){
             for (int j = 0; j < tileSet[0].length; j++){
                 if (tileSet[i][j].equals(item)){
@@ -268,6 +268,14 @@ public class HungoverCockroach {
     }
 
     public static List<SimulationResult> runSimulations(String[][] tileSet, int[] aLoc, int[] wLoc, int[] cStart, int numSim){
+        /*
+         * 
+         * Function for running multiple simulations
+         * Takes in: 2D string array, asprin location, water loc, cockroach loc, and number of simulations needed
+         * Returns: List of SimulationResults (which is custom class at bottom)
+         * 
+         */
+        
         List<SimulationResult> results = new ArrayList<>();
 
         for (int i = 0; i < numSim; i++){
@@ -279,6 +287,14 @@ public class HungoverCockroach {
     }
 
     public static SimulationResult runSim(String[][] tileSet, int[] aLoc, int[] wLoc, int[] cStart) {
+        /*
+         * 
+         * Function that runs the individual simulation
+         * Takes in: 2D string array, asprin location, water loc, cockroach loc
+         * Returns: SimulationResult
+         * 
+         */
+        
         boolean[][] visit = new boolean[tileSet.length][tileSet[0].length];
         int[] cPos = Arrays.copyOf(cStart, 2);
         List<String> moves = new ArrayList<>();
@@ -318,6 +334,14 @@ public class HungoverCockroach {
     }
 
     public static int[] getNextPos(int[] cPos, int rows, int col){
+        /*
+         * 
+         * Function which gets next movement of cockroach
+         * Uses random number generator to get next movement making uniform probability
+         * Takes in cockroach position, rows and columns of tileset
+         * Returns next position of cockroach
+         * 
+         */
         int[][] dirs = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
         int[] nextPos;
 
@@ -330,6 +354,13 @@ public class HungoverCockroach {
     }
 
     public static String getDir(int[] from, int[] to){
+        /*
+         * 
+         * Function which translate the movement to a cardinal direction
+         * Takes in the move to and from locations
+         * Returns string which is the cardinal direction moved
+         * 
+         */
         int rowDiff = to[0] - from[0];
         int colDiff = to[1] - from[1];
 
@@ -355,6 +386,14 @@ public class HungoverCockroach {
     }
 
     public static boolean allTilesVisited(boolean[][] visit, String[][] tileSet){
+        /*
+         * 
+         * Function to verify that all tiles were visited
+         * Takes in boolean 2D area and tileset
+         * Returns boolean to say if current location is visited
+         * 
+         */
+
         for (int i = 0; i < visit.length; i++){
             for (int j = 0; j < visit[0].length; j++){
                 if (!visit[i][j] && !tileSet[i][j].equals("A ") && !tileSet[i][j].equals("W ")){
@@ -365,7 +404,15 @@ public class HungoverCockroach {
         return true;
     }
 
-    private static class SimulationResult {
+    public static class SimulationResult {
+        /*
+         * 
+         * Custom class to store the results of the each simulation
+         * Consist of the list of moves in a string format
+         * Two booleans to say if the cockroach found the Asprin or water
+         * 
+         */
+        
         List<String> moves;
         boolean foundAspirin;
         boolean foundWater;
