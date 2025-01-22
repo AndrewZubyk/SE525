@@ -48,18 +48,43 @@ public class HungoverCockroach {
             }
         }
 
+        System.out.println("\nEnter the name and location of the output file: ");
+        String file = s.nextLine();
+
+        Instant start = Instant.now();
+
         List<SimulationResult> results = runSimulations(tileSet, aLoc, wLoc, cStart, numSim);
         
-        for (int i = 0; i<results.size(); i++) {
-            SimulationResult result = results.get(i);
+        Instant end = Instant.now();
+        Duration time = Duration.between(start, end);
 
-            System.out.println("Simulation: " + (i + 1));
-            System.out.println("Moves: " + result.moves.size());
-            System.out.println("Path: " + result.moves);
-            System.out.println("Found Aspirin: " + result.foundAspirin);
-            System.out.println("Found Water: " + result.foundWater);
-            System.out.println(" ");
+        double averageMoves = results.stream().mapToInt(r -> r.moves.size()).average().orElse(0);
 
+        try (PrintWriter w = new PrintWriter(new FileWriter(file))) {
+            w.println("Simulation Results");
+            w.println(" ");
+            w.println("Number of Simulations: " + numSim);
+            w.println(" ");
+            w.println("Time taken: " + time.toMillis() + " milliseconds");
+            w.println(" ");
+            w.println("Asprin Location: " + Arrays.toString(aLoc));
+            w.println(" ");
+            w.println("Water Location: " + Arrays.toString(wLoc));
+            w.println(" ");
+            w.println("Avergae Moves: " + averageMoves);
+            w.println(" ");
+            
+            for (int i = 0; i<results.size(); i++) {
+                SimulationResult result = results.get(i);
+                w.println("Simulation: " + (i + 1));
+                w.println("Moves: " + result.moves.size());
+                w.println("Path: " + result.moves);
+                w.println("Found Aspirin: " + result.foundAspirin);
+                w.println("Found Water: " + result.foundWater);
+                w.println(" ");
+            }
+        } catch (IOException e) {
+            System.out.println("Error writing to file: " + e.getMessage());
         }
 
         s.close();
@@ -231,35 +256,6 @@ public class HungoverCockroach {
         return tileSet;
     }
 
-    public static void moveCockroach(String[][] tileSet){
-        /*
-         * 
-         * Function for moving the cockroach in the tileset
-         * Takes in: tileSet in 2D Array format with strings
-         * Returns: 
-         * 
-         */
-
-        for(int i = 0; i < tileSet.length; i++){
-            for(int j = 0; j < tileSet[0].length; j++){
-                if(tileSet[i][j].equals("C ")){
-        
-                    /*
-                     * 
-                     * Logic for moving the cockroach
-                     * Random number generator done 1 --> 3
-                     * 1 means move left or up
-                     * 2 means stay in that row or column
-                     * 3 means move right or down
-                     * 
-                     */
-
-                    System.out.println("Cockroach found at: " + i + " " + j);
-                }
-            }
-        }
-    }
-
     public static int[] findItemLoc(String[][] tileSet, String item){
         for (int i = 0; i < tileSet.length; i++){
             for (int j = 0; j < tileSet[0].length; j++){
@@ -289,13 +285,22 @@ public class HungoverCockroach {
         boolean gotAsprin = false;
         boolean gotWater = false;
 
-        while ((!gotAsprin && !gotWater) && !allTilesVisited(visit)){
+        while (!(gotAsprin && gotWater) && !allTilesVisited(visit, tileSet)){
             visit[cPos[0]][cPos[1]] = true;
 
             if (Arrays.equals(cPos, aLoc)) {
                 gotAsprin = true;
-            } else if (Arrays.equals(cPos, wLoc)) {
+            } 
+            if (Arrays.equals(cPos, wLoc)) {
                 gotWater = true;
+            }
+
+            if (gotAsprin && gotWater) {
+                break;
+            }
+
+            if (allTilesVisited(visit, tileSet)) {
+                break;
             }
 
             int[] nextPos = getNextPos(cPos, tileSet.length, tileSet[0].length);
@@ -305,6 +310,10 @@ public class HungoverCockroach {
             cPos = nextPos;
 
         }
+
+        if (!gotAsprin || !gotWater) {
+        }
+
         return new SimulationResult(moves, gotAsprin, gotWater);
     }
 
@@ -345,10 +354,10 @@ public class HungoverCockroach {
         }
     }
 
-    public static boolean allTilesVisited(boolean[][] visit){
+    public static boolean allTilesVisited(boolean[][] visit, String[][] tileSet){
         for (int i = 0; i < visit.length; i++){
             for (int j = 0; j < visit[0].length; j++){
-                if (!visit[i][j]){
+                if (!visit[i][j] && !tileSet[i][j].equals("A ") && !tileSet[i][j].equals("W ")){
                     return false;
                 }
             }
